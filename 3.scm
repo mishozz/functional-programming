@@ -55,8 +55,10 @@
   )
 
 (define (removeUselessWhiteSpaces s)
-  (define x (removeWhiteSpacesHelper s 0 (string-length s) ""))
-  (removeWhiteSpacesHelper2 x 0 (string-length x) "")
+  (cond ((equal? s "")
+         "")
+        (else
+          (removeWhiteSpacesHelper2 (removeWhiteSpacesHelper s 0 (string-length s) "") 0 (string-length (removeWhiteSpacesHelper s 0 (string-length s) "")) "")))
   )
 
 (define (prec operator)
@@ -100,4 +102,105 @@
 (define (infixToPostfix s)
   (define exp (removeUselessWhiteSpaces s))
   (infixToPostfixHelper exp 0 (string-length exp) "" "")
+  )
+
+(define (lastOccuranceOf s a symbol)
+ (cond ((or (not (string-contains? s (make-string 1 symbol))) (isEmpty s))
+        -1)
+       ((eq? (string-ref s a) symbol)
+        a)
+       (else
+        (lastOccuranceOf s (- a 1) symbol)))
+  )
+
+(define (takeElementFromStack stack delimiter)
+  (define index (lastOccuranceOf stack (- (string-length stack) 1) delimiter))
+  (substring stack (+ index 1))
+  )
+
+
+(define (myabs x)
+  (cond ((< x 0) (* x -1))
+        ((x >= 0) (* x 1))))
+
+(define (myexpt x y)
+        (cond ((< x 0) (* (cond ((odd? (myabs y)) -1)
+                                 (else 1))
+                          (myexpt (myabs x) y)))
+              ((< y 0) (/ 1 (myexpt x (myabs y))))
+              ((= y 0) 1)
+              ((> y 0) (* x (myexpt x (- y 1))))))
+
+(define (getProcedure operator)
+  (cond ((eq? operator #\+)
+         +)
+        ((eq? operator #\-)
+         -)
+        ((eq? operator #\*)
+         *)
+        (else
+         /))
+  )
+
+  (define (evalStack stack operator)
+    (define t1 (takeElementFromStack stack #\,))
+    (define st1 (substring stack 0 (lastOccuranceOf stack (- (string-length stack) 1) #\,)))
+    (define t2 (takeElementFromStack st1 #\,))
+    (define st2 (substring st1 0 (if (= (lastOccuranceOf st1 (- (string-length st1) 1) #\,) -1)
+                                       0
+                                       (lastOccuranceOf st1 (- (string-length st1) 1) #\,))))
+    (cond ((eq? operator #\^)
+           (if (= (string-length st2) 0 )
+                 (add st2 (number->string(myexpt (string->number t2) (string->number t1))))
+                 (string-append st2 "," (number->string(myexpt (string->number t2) (string->number t1))))))
+          (else
+           (if (= (string-length st2) 0)
+           (add st2 (number->string((getProcedure operator) (string->number t1) (string->number t2))))
+           (string-append st2 "," (number->string((getProcedure operator) (string->number t1) (string->number t2)))))))
+    )
+
+
+
+(define (evalHelper s a b stack)
+  (cond ((= a b)
+         (takeElementFromStack stack #\,))
+        ((isOperator (string-ref s a))
+         (evalHelper s (+ a 1) b (evalStack stack (string-ref s a))))
+        (else
+         (evalHelper s (+ a 1) b (add stack (string-ref s a)))))
+  )
+
+(define (takeEndingNumberIndex s a b)
+  (cond ((or (= a b) (isOperator(string-ref s a)))
+         a)
+        (else
+         (takeEndingNumberIndex s (+ a 1) b)))
+  )
+
+(define (isValidHelper s a b op?)
+  (define expr (removeUselessWhiteSpaces s))
+  (define b(string-length expr))
+  (cond ((or (isOperator(string-ref expr (- b 1))) (or (string-contains? expr " ") (isOperator (string-ref expr 0))))
+         #f)
+        ((= a b)
+         #t)
+        ((and (isOperator (string-ref expr a)) op?)
+         #f)
+        ((and (isOperator (string-ref expr a)) (not op?))
+         (isValidHelper expr (+ a 1) b #t))
+        (else
+         (isValidHelper expr (takeEndingNumberIndex expr a b) b #f)))
+  )
+
+(define (expr-valid? x)
+  (isValidHelper x 0 (string-length x) #f)
+  )
+
+(define (expr-eval x)
+  (cond ((= (string-length x) 0)
+         0)
+        ((not (expr-valid? x))
+         #f)
+        (else
+         (evalHelper (infixToPostfix x) 0 (string-length (infixToPostfix x)) "")))
   )
