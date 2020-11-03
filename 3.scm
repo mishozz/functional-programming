@@ -83,27 +83,6 @@
          (emptyStackInResult (pop stack) (add result (top stack)))))
   )
 
-(define (infixToPostfixHelper s a b stack result )
-  (define (predicate s a stack)
-    (and (not (isEmpty stack)) ( <= (prec (string-ref s a)) (prec (top stack))))
-    )
-  (cond ((= a b)
-          (emptyStackInResult stack result))
-        (else
-         (cond ((isOperator (string-ref s a))
-                (cond ((not (predicate s a stack))
-                       (infixToPostfixHelper s (+ a 1) b (add stack (string-ref s a)) (add result #\,)))
-                      (else
-                       (infixToPostfixHelper s a b (pop stack) (add result (top stack))))))
-               (else
-                (infixToPostfixHelper s (+ a 1) b stack (add result (string-ref s a)))))))
-  )
-
-(define (infixToPostfix s)
-  (define exp (removeUselessWhiteSpaces s))
-  (infixToPostfixHelper exp 0 (string-length exp) "" "")
-  )
-
 (define (lastOccuranceOf s a symbol)
  (cond ((or (not (string-contains? s (make-string 1 symbol))) (isEmpty s))
         -1)
@@ -177,10 +156,40 @@
          (takeEndingNumberIndex s (+ a 1) b)))
   )
 
-(define (isValidHelper s a b op?)
+
+;final working functions are below
+
+(define (expr-rp s)
+  (define (infixToPostfixHelper s a b stack result )
+  (define (predicate s a stack)
+    (and (not (isEmpty stack)) ( <= (prec (string-ref s a)) (prec (top stack))))
+    )
+  (cond ((= a b)
+          (emptyStackInResult stack result))
+        (else
+         (cond ((isOperator (string-ref s a))
+                (cond ((not (predicate s a stack))
+                       (infixToPostfixHelper s (+ a 1) b (add stack (string-ref s a)) (add result #\,)))
+                      (else
+                       (infixToPostfixHelper s a b (pop stack) (add result (top stack))))))
+               (else
+                (infixToPostfixHelper s (+ a 1) b stack (add result (string-ref s a)))))))
+  )
+  (define exp (removeUselessWhiteSpaces s))
+  (cond ((not (expr-valid? s))
+         #f)
+        (else
+         (infixToPostfixHelper exp 0 (string-length exp) "" "")))
+  )
+
+
+(define (expr-valid? x)
+  (define (isValidHelper s a b op?)
   (define expr (removeUselessWhiteSpaces s))
   (define b(string-length expr))
-  (cond ((or (isOperator(string-ref expr (- b 1))) (or (string-contains? expr " ") (isOperator (string-ref expr 0))))
+  (cond ((= (string-length expr) 0 )
+         #t)
+        ((or (isOperator(string-ref expr (- b 1))) (or (string-contains? expr " ") (isOperator (string-ref expr 0))))
          #f)
         ((= a b)
          #t)
@@ -191,10 +200,9 @@
         (else
          (isValidHelper expr (takeEndingNumberIndex expr a b) b #f)))
   )
-
-(define (expr-valid? x)
   (isValidHelper x 0 (string-length x) #f)
   )
+
 
 (define (expr-eval x)
   (cond ((= (string-length x) 0)
@@ -202,5 +210,5 @@
         ((not (expr-valid? x))
          #f)
         (else
-         (evalHelper (infixToPostfix x) 0 (string-length (infixToPostfix x)) "")))
+         (string->number (evalHelper (expr-rp  x) 0 (string-length (expr-rp  x)) ""))))
   )
