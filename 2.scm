@@ -101,3 +101,28 @@
   (define set2-string (number->string set2 2))
   (set-operation-helper set1-string set2-string 0 0 (lambda (x) (and (set-contains? set1 x) (not (set-contains? set2 x)))))
   )
+
+(define (knapsack c n w p)
+  (define (knapsack-helper c n w p result)
+  (define (max-set set1 set2)
+    (define (get-weight set p)
+      (define set-string (number->string set 2))
+      (accumulate 0 (string-length set-string) + (lambda (x) (
+                                                          if (eq? (string-ref set-string x) #\1)
+                                                            (p x)
+                                                             0
+                                                          )) 0)
+      )
+    (max (get-weight set1 p) (get-weight set2 p))
+    )
+  (cond ((or (= n 0) (= c 0))
+         result)
+        ((> (w (- n 1)) c)
+         (knapsack-helper c (- n 1) w p result))
+        (else
+         (max-set (+ (p (- n 1)) (knapsack-helper (- c (w (- n 1))) (- n 1) w p (set-add result n)))
+              (knapsack-helper c (- n 1) w p result))))
+  )
+  
+  (knapsack-helper c n w p 0)
+  )
