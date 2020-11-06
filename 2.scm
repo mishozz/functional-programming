@@ -102,9 +102,8 @@
   (set-operation-helper set1-string set2-string 0 0 (lambda (x) (and (set-contains? set1 x) (not (set-contains? set2 x)))))
   )
 
-(define (knapsack c n w p)
-  (define (knapsack-helper c n w p result)
-  (define (max-set set1 set2)
+
+ (define (max-set set1 set2 p)
     (define (get-weight set p)
       (define set-string (number->string set 2))
       (accumulate 0 (string-length set-string) + (lambda (x) (
@@ -113,16 +112,20 @@
                                                              0
                                                           )) 0)
       )
-    (max (get-weight set1 p) (get-weight set2 p))
+    (cond ((> (get-weight set1 p) (get-weight set2 p))
+           set1)
+          (else
+           set2))
     )
+
+
+(define (knapsack c n w p)
   (cond ((or (= n 0) (= c 0))
-         result)
+         0)
         ((> (w (- n 1)) c)
-         (knapsack-helper c (- n 1) w p result))
+         (knapsack c (- n 1) w p))
         (else
-         (max-set (+ (p (- n 1)) (knapsack-helper (- c (w (- n 1))) (- n 1) w p (set-add result n)))
-              (knapsack-helper c (- n 1) w p result))))
-  )
-  
-  (knapsack-helper c n w p 0)
+         (max-set 
+	       (set-add (knapsack (- c (w (- n 1))) (- n 1) w p) (- n 1))
+               (knapsack c (- n 1) w p) p)))
   )
