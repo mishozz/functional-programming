@@ -13,35 +13,12 @@
 (define (star? c)
   (eq? c #\*))
 
-(define (remove-spaces-stars str)
-  (define ls (string->list str))
-  (list->string (my-filter ls (lambda (x) (and (not (star? x)) (not (space? x))))))
-  )
+(define (char->num c) (string->number (string c)))
 
-(define (remove-closing-brackets str)
-  (substring (substring str 1) 0 (- (string-length str) 2))
-  )
-
-(define (root tree) (car tree))
-(define (left-tree tree) (cadr tree))
-(define (right-tree tree) (caddr tree))
-(define (make-tree root left right)
-  (list root left right))
-
-(define (new-node x)
-  (make-tree x '() '())
-  )
-
-(define (add-left-tree tree x)
-  (cond ((null? tree)
-         (new-node x))
-        ((make-tree (root tree) (add-left-tree (left-tree tree) x) (right-tree tree))))
-  )
-
-(define (add-right-tree tree x)
-  (cond ((null? tree)
-         (new-node x))
-        ((make-tree (root tree) (left-tree tree) (add-right-tree (right-tree tree) x))))
+(define (valid? c)
+  (if (or (or (or (space? c) (star? c)) (or (eq? c #\{) (eq? c #\}))) (char->num c))
+      #t
+      #f)
   )
 
 (define (pop stack)
@@ -59,6 +36,42 @@
          (cons (car stack) (push (cdr stack) x))))
   )
 
+(define (remove-spaces str)
+  (define ls (string->list str))
+  (list->string (my-filter ls (lambda (x) (not (space? x)))))
+  )
+
+(define (find-ending-index str si ei)
+  (cond ((> si ei)
+         -1)
+        ((not (char->num (string-ref str (+ si 1))))
+         si)
+        (else
+         (find-ending-index str (+ si 1) ei)))
+  )
+
+
+(define (parse-to-working-list s)
+  (define str (remove-spaces s))
+  (define (parse-to-list-helper s si ei result)
+  (cond ((> si ei)
+         result)
+        ((char->num (string-ref str si))
+         (parse-to-list-helper str (+ si (- (find-ending-index str si ei) (- si 1))) ei (push result (string->number (substring str si (+ (find-ending-index str si ei) 1))))))
+        (else
+         (parse-to-list-helper str (+ si 1) ei (push result (string-ref str si)))))
+  )
+  
+  (parse-to-list-helper str 0 (- (string-length str) 1) null)
+  )
+
+
+(define (root tree) (car tree))
+(define (left-tree tree) (cadr tree))
+(define (right-tree tree) (caddr tree))
+(define (make-tree root left right)
+  (list root left right))
+
 (define (find-index str si ei stack)
   (cond ((> si ei)
          -1)
@@ -74,29 +87,37 @@
          (find-index str (+ si 1) ei stack)))
   )
 
-(define (s-t-helper s si ei tree)
-  (define str (remove-spaces-stars s))
-  (define index (find-index str (+ si 1) ei null))
-  (cond ((> si ei)
-         null)
-        ((and (<= (+ si 1) ei) (eq? (string-ref str (+ si 1)) #\{))
-         (cond ((not (= index -1))
-                (make-tree (root tree) (add-left-tree tree (s-t-helper str (+ si 2) (- index 1) (left-tree tree))) (add-right-tree tree (s-t-helper str (+ index 2) (- ei 1) (right-tree tree))))
-                ))))
+
+(define (list-tree? t)
+  (cond ((null? t)
+         #t)
+        ((not (= (length t) 3))
+         #f)
+        (else
+         (list-tree? (left-tree t))
+         (list-tree? (right-tree t))))
+
   )
 
-(define (tree? t)
-  (or (null? t) (and (list? t)
-           (= (length t) 3))
-           (tree? (left-tree t))
-           (tree? (right-tree t))))
+(define (valid-list? lst)
+  (cond ((null? lst)
+         #t)
+        ((or (not (valid? (car lst))) (and (star? (car lst)) (not (or (eq? (cadr lst) #\}) (or (eq? (cadr lst) #\{) (star? (cadr lst)))))))
+         #f)
+        (else
+         (valid-list? (cdr lst))))
+  )
+
+(define (tree? str)
+  (and (valid-list? (string->list (remove-spaces str))) (list-tree? (string->tree str)))
+  )
 
 (define (append-top ele stack)
   (cons (append (car stack) (list ele))
         (cdr stack)))
 
-(define (tree->string str)
-  (let parse ([tokens (string->list str)] [stack '(())])
+(define (string->tree str)
+  (let parse ([tokens (parse-to-working-list str)] [stack '(())])
     (cond [(null? tokens)
            ; solution is at the top of the stack, return it
            (caar stack)]
@@ -111,4 +132,4 @@
            (parse (cdr tokens) (append-top '() stack))]
           [else
            ; add current element to top of stack
-           (parse (cdr tokens) (append-top (string->number (string (car tokens))) stack))])))
+           (parse (cdr tokens) (append-top  (car tokens) stack))])))
