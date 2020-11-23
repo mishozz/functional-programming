@@ -88,9 +88,24 @@
   )
 
 
+(define (parse-tree str)
+  (let parse ([tokens (parse-to-working-list str)] [stack '(())])
+    (cond [(null? tokens)
+           (caar stack)]
+          [(eq? (car tokens) #\{)
+           (parse (cdr tokens) (cons '() stack))]
+          [(eq? (car tokens) #\})
+           (parse (cdr tokens) (append-top (car stack) (cdr stack)))]
+          [(eq? (car tokens) #\*)
+           (parse (cdr tokens) (append-top '() stack))]
+          [else
+           (parse (cdr tokens) (append-top  (car tokens) stack))])))
+
 (define (list-tree? t)
   (cond ((null? t)
          #t)
+        ((not (list? t))
+        #f)
         ((not (= (length t) 3))
          #f)
         (else
@@ -102,14 +117,41 @@
 (define (valid-list? lst)
   (cond ((null? lst)
          #t)
-        ((or (not (valid? (car lst))) (and (star? (car lst)) (not (or (eq? (cadr lst) #\}) (or (eq? (cadr lst) #\{) (star? (cadr lst)))))))
+        ((not (valid? (car lst)))
          #f)
         (else
          (valid-list? (cdr lst))))
   )
 
+(define (brackets-valid? lst)
+  (define (brackets-helper lst stack)
+    (cond ((null? lst)
+           (if (null? stack)
+               #t
+               #f)
+           )
+          ((eq? (car lst) #\{)
+           (brackets-helper (cdr lst) (push stack #\{)))
+          ((eq? (car lst) #\})
+           (if (null? stack)
+               #f
+               (brackets-helper (cdr lst) (pop stack))))
+          (else
+           (brackets-helper (cdr lst) stack)))
+    )
+
+  (brackets-helper lst null)
+  )
+
 (define (tree? str)
-  (and (valid-list? (string->list (remove-spaces str))) (list-tree? (string->tree str)))
+  (cond ((not (brackets-valid? (string->list str)))
+         #f)
+        ((not (list-tree? (parse-tree str)))
+          #f)
+        ((not (valid-list? (string->list str)))
+         #f)
+        (else
+         #t))
   )
 
 (define (append-top ele stack)
@@ -118,7 +160,9 @@
 
 (define (string->tree str)
   (let parse ([tokens (parse-to-working-list str)] [stack '(())])
-    (cond [(null? tokens)
+    (cond [(not (tree? str))
+           #f]
+          [(null? tokens)
            ; solution is at the top of the stack, return it
            (caar stack)]
           [(eq? (car tokens) #\{)
