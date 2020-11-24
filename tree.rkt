@@ -67,8 +67,12 @@
 
 
 (define (root tree) (car tree))
-(define (left-tree tree) (cadr tree))
-(define (right-tree tree) (caddr tree))
+(define (left-tree tree) (if (null? tree)
+                             '()
+                          (cadr tree)))
+(define (right-tree tree) (if (null? tree)
+                              '()
+                              (caddr tree)))
 (define (make-tree root left right)
   (list root left right))
 (define (tree-empty? tree) (null? tree))
@@ -188,3 +192,18 @@
           (and (<= minv value maxv)
                (ts-minmax (left-tree tree) minv  value)
                (ts-minmax (right-tree tree) value maxv))))))
+
+(define (height tree)
+  (if (null? tree)
+        0
+        (+ 1 (max (height (left-tree tree)) 
+                  (height (right-tree tree))))))
+; add check for valid tree
+(define (balanced? tree)
+  (define (balanced-helper tree lh rh)
+    (or (tree-empty? tree)
+        (and (<= (abs (- lh rh)) 1)
+             (balanced-helper (left-tree tree) (height (left-tree tree)) (height (right-tree tree)))
+             (balanced-helper (right-tree tree) (height (left-tree tree)) (height (right-tree tree)))))
+    )
+    (balanced-helper tree (height (left-tree tree)) (height (right-tree tree))))
