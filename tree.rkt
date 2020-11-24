@@ -71,6 +71,7 @@
 (define (right-tree tree) (caddr tree))
 (define (make-tree root left right)
   (list root left right))
+(define (tree-empty? tree) (null? tree))
 
 (define (find-index str si ei stack)
   (cond ((> si ei)
@@ -177,3 +178,13 @@
           [else
            ; add current element to top of stack
            (parse (cdr tokens) (append-top  (car tokens) stack))])))
+
+
+; add check for valid tree when tree->string implemented
+(define (ordered? tree)
+  (let ts-minmax ((tree tree) (minv -Inf.0) (maxv +Inf.0))    
+    (or (tree-empty? tree)
+        (let ((value (root tree)))
+          (and (<= minv value maxv)
+               (ts-minmax (left-tree tree) minv  value)
+               (ts-minmax (right-tree tree) value maxv))))))
