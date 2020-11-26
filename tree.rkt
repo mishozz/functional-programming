@@ -207,3 +207,83 @@
              (balanced-helper (right-tree tree) (height (left-tree tree)) (height (right-tree tree)))))
     )
     (balanced-helper tree (height (left-tree tree)) (height (right-tree tree))))
+
+(define (preorder tree)
+  (if (null? tree)
+      '()
+      (append (list (root tree))
+              (preorder (left-tree tree))
+              (preorder (right-tree tree)))))
+
+(define (postorder tree)  
+  (if (null? tree)
+      '()
+      (append (postorder (left-tree tree))
+              (postorder (right-tree tree))
+              (list (root tree)))))
+
+(define (inorder tree)  
+  (if (null? tree)
+      '()
+      (append (inorder (left-tree tree))
+              (inorder (right-tree tree))
+              (list (root tree)))))
+
+(define (tree->string-helper tree)
+  (if (null? tree)
+      "*"
+      (string-append "{" (number->string (root tree))
+                     (tree->string-helper (left-tree tree))
+                     (tree->string-helper (right-tree tree)) "}"))
+  )
+
+(define (to-string lst)
+  (define (to-string-helper lst result)
+    (if (null? lst)
+        result
+        (to-string-helper (cdr lst) (string-append result (
+                                                           if (char? (car lst))
+                                                              (string (car lst))
+                                                              (number->string (car lst))
+                                                           ))))
+    )
+    (to-string-helper lst "")
+  )
+
+(define (tree->string tree)
+  (define (tree->string-helper tree)
+    (define (add-spaces str)
+      (define (add-spaces-helper lst result)
+        (cond ((null? lst)
+               result)
+              ((and (not (eq? (car lst) #\{)) (not (eq? (car lst) #\})))
+               (
+                if (and (not (null? (cdr lst))) (not (eq? (cadr lst) #\})))
+                   (add-spaces-helper (cdr lst) (append
+                                                 (if (list? result)
+                                                     result
+                                                     (list result))
+                                                 (list (car lst))
+                                                 (list #\space)))
+                   (add-spaces-helper (cdr lst) (append result (list (car lst))))
+                   ))
+              ((and (not (null? (cdr lst))) (and (eq? (car lst) #\}) (star? (cadr lst))))
+               (add-spaces-helper (cdr lst) (append result (list (car lst)) (list #\space))))
+              ((and (not (null? (cdr lst))) (and (eq? (car lst) #\}) (eq? (cadr lst) #\{)))
+               (add-spaces-helper (cdr lst) (append result (list (car lst)) (list #\space))))
+              (else
+               (add-spaces-helper (cdr lst) (append result (list (car lst))))))
+    )
+  (to-string (add-spaces-helper (parse-to-working-list str) '()))
+  )
+  (if (null? tree)
+      "*"
+      (add-spaces (string-append "{" (number->string (root tree))
+                     (tree->string-helper (left-tree tree))
+                     (tree->string-helper (right-tree tree)) "}")))
+  )
+  (cond ((not (list-tree? tree))
+         #f)
+        (else
+         (tree->string-helper tree)))
+  )
