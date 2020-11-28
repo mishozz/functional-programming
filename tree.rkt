@@ -186,12 +186,18 @@
 
 ; add check for valid tree when tree->string implemented
 (define (ordered? tree)
+  (define (ordered-helper tree)
   (let ts-minmax ((tree tree) (minv -Inf.0) (maxv +Inf.0))    
     (or (tree-empty? tree)
         (let ((value (root tree)))
           (and (<= minv value maxv)
                (ts-minmax (left-tree tree) minv  value)
                (ts-minmax (right-tree tree) value maxv))))))
+  (cond ((not (list-tree? tree))
+         #f)
+        (else
+         (ordered-helper tree)))
+  )
 
 (define (height tree)
   (if (null? tree)
@@ -206,7 +212,11 @@
              (balanced-helper (left-tree tree) (height (left-tree tree)) (height (right-tree tree)))
              (balanced-helper (right-tree tree) (height (left-tree tree)) (height (right-tree tree)))))
     )
-    (balanced-helper tree (height (left-tree tree)) (height (right-tree tree))))
+  (cond ((not (list-tree? tree))
+         #f)
+        (else
+         (balanced-helper tree (height (left-tree tree)) (height (right-tree tree)))))
+  )
 
 (define (preorder tree)
   (if (null? tree)
