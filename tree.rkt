@@ -1,4 +1,6 @@
-#lang racket
+#lang racket/base
+(require racket/stream)
+
 (define (my-filter list pred)
   (cond ((null? list)
         null)
