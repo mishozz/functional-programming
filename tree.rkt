@@ -171,23 +171,16 @@
     (cond [(not (tree? str))
            #f]
           [(null? tokens)
-           ; solution is at the top of the stack, return it
            (caar stack)]
           [(eq? (car tokens) #\{)
-           ; start new sublist at the top of the stack
            (parse (cdr tokens) (cons '() stack))]
           [(eq? (car tokens) #\})
-           ; pop top element of the stack, append it to previous
-           ; frame, continue with solution where we left it
            (parse (cdr tokens) (append-top (car stack) (cdr stack)))]
           [(eq? (car tokens) #\*)
            (parse (cdr tokens) (append-top '() stack))]
           [else
-           ; add current element to top of stack
            (parse (cdr tokens) (append-top  (car tokens) stack))])))
 
-
-; add check for valid tree when tree->string implemented
 (define (ordered? tree)
   (define (ordered-helper tree)
   (let ts-minmax ((tree tree) (minv -Inf.0) (maxv +Inf.0))    
@@ -207,7 +200,7 @@
         0
         (+ 1 (max (height (left-tree tree)) 
                   (height (right-tree tree))))))
-; add check for valid tree
+
 (define (balanced? tree)
   (define (balanced-helper tree lh rh)
     (or (tree-empty? tree)
@@ -220,27 +213,6 @@
         (else
          (balanced-helper tree (height (left-tree tree)) (height (right-tree tree)))))
   )
-
-(define (preorder tree)
-  (if (null? tree)
-      '()
-      (append (list (root tree))
-              (preorder (left-tree tree))
-              (preorder (right-tree tree)))))
-
-(define (postorder tree)  
-  (if (null? tree)
-      '()
-      (append (postorder (left-tree tree))
-              (postorder (right-tree tree))
-              (list (root tree)))))
-
-(define (inorder tree)  
-  (if (null? tree)
-      '()
-      (append (inorder (left-tree tree))
-              (inorder (right-tree tree))
-              (list (root tree)))))
 
 (define (tree->string-helper tree)
   (if (null? tree)
@@ -299,4 +271,36 @@
          #f)
         (else
          (tree->string-helper tree)))
+  )
+
+(define (preorder-stream tree)  
+  (if (null? tree)
+      empty-stream
+      (stream-append (stream (root tree))
+              (preorder-stream (left-tree tree))
+              (preorder-stream (right-tree tree)))))
+
+(define (postorder-stream tree)  
+  (if (null? tree)
+      empty-stream
+      (stream-append (postorder-stream (left-tree tree))
+              (postorder-stream (right-tree tree))
+              (stream (root tree)))))
+
+(define (inorder-stream tree)  
+  (if (null? tree)
+      empty-stream
+      (stream-append (inorder-stream (left-tree tree))
+              (stream (root tree))
+              (inorder-stream (right-tree tree)))))
+
+(define ‘preorder preorder-stream)
+(define ‘inorder inorder-stream)
+(define ‘postorder postorder-stream)
+
+(define (tree->stream tree order)
+  (if (not (list-tree? tree))
+      #f
+  (order tree)
+  )
   )
