@@ -1,17 +1,19 @@
+module Task2 (grayscale,Rgb(Rgb),Image(Image)) where
+
 import Data.Word
 import Prelude
 import System.IO
 
 data Rgb = Rgb { red   :: Word8
                , green :: Word8
-               , blue  :: Word8 } deriving (Show,Read)
+               , blue  :: Word8 } deriving (Eq,Show,Read)
 
 data Image = Image { width   :: Int
                    , height  :: Int
-                   , content :: [[Rgb]] } deriving (Show,Read)
+                   , content :: [[Rgb]] } deriving (Eq,Show,Read)
 
 redMultiplier :: Float 
-redMultiplier = 0.3
+redMultiplier = 0.30
 
 greenMultiplier :: Float 
 greenMultiplier = 0.59
@@ -31,11 +33,11 @@ word8ToFloat  = fromIntegral
 intToWord8 :: Int  -> Word8
 intToWord8  = fromIntegral 
 
-changeColor :: Word8 -> Float -> Int
-changeColor color multiplier = fromIntegral (round (word8ToFloat color*multiplier))
+changeColor :: Word8 -> Float -> Float
+changeColor color multiplier =  word8ToFloat color*multiplier
 
 transfromToWord8 :: Rgb -> Word8
-transfromToWord8 (Rgb red green blue) = intToWord8 (changeColor red redMultiplier + changeColor green greenMultiplier + changeColor blue blueMultiplier)
+transfromToWord8 (Rgb red green blue) = intToWord8 $ round (changeColor red redMultiplier + changeColor green greenMultiplier + changeColor blue blueMultiplier)
 
 greyscaleRgb :: Rgb -> Rgb
 greyscaleRgb rgb = Rgb (transfromToWord8 rgb) (transfromToWord8 rgb) (transfromToWord8 rgb)
