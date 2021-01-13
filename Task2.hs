@@ -5,6 +5,7 @@ import Data.List
 import Prelude
 import System.IO
 import Control.Monad
+import Data.Array
 
 data Rgb = Rgb { red   :: Word8
                , green :: Word8
@@ -100,3 +101,32 @@ loadImage path = do
         then return (Image 0 0 [[]])
         else do
             return (Image (read width) (read height) (listToPixels content w))
+
+inBounds :: Int -> Int -> Int -> Int -> Bool
+inBounds x y xBorder yBorder = x >= 0 && x <= xBorder && y >= 0 && y <= yBorder
+
+replaceNth :: Int -> a -> [a] -> [a]
+replaceNth _ _ [] = []
+replaceNth n newVal (x:xs)
+   | n == 0 = newVal:xs
+   | otherwise = x:replaceNth (n-1) newVal xs
+
+changePixelAt :: Int -> Int -> a -> [[a]] -> [[a]]
+changePixelAt row col x xs =
+    let row_to_replace_in = xs !! row
+        modified_row = replaceNth col x row_to_replace_in
+    in replaceNth row modified_row xs
+
+getPixelAt :: [[Rgb]] -> Int -> Int -> Rgb
+getPixelAt content n m = content !! n !! m
+
+floodFillHelper :: [[Rgb]] -> Int -> Int -> Rgb -> Rgb -> Int -> Int -> [[Rgb]]
+floodFillHelper content x y startRgb replacement xBorder yBorder 
+    | ((not $ inBounds x y xBorder yBorder) || getPixelAt content x y /= startRgb || startRgb == replacement) = content
+    | otherwise = 
+        contentNorth
+        where content' = changePixelAt x y replacement content
+              contentEast = floodFillHelper content' (x+1) y startRgb replacement xBorder yBorder
+              contentWest = floodFillHelper contentEast (x-1) y startRgb replacement xBorder yBorder
+              contentSouth = floodFillHelper contentWest x (y+1) startRgb replacement xBorder yBorder
+              contentNorth = floodFillHelper contentSouth x (y-1) startRgb replacement xBorder yBorder
