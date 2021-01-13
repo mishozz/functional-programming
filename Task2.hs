@@ -1,11 +1,7 @@
 module Task2 (grayscale,Rgb(Rgb),Image(Image)) where
 
-import Data.Word
-import Data.List
-import Prelude
-import System.IO
-import Control.Monad
-import Data.Array
+import Data.Word ( Word8 )
+import System.IO ( openFile, hGetContents, IOMode(ReadMode) )
 
 data Rgb = Rgb { red   :: Word8
                , green :: Word8
