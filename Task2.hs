@@ -1,4 +1,4 @@
-module Task2 (grayscale,Rgb(Rgb),Image(Image)) where
+module Task2 (grayscale,floodFill,Rgb(Rgb),Image(Image)) where
 
 import Data.Word ( Word8 )
 import System.IO ( openFile, hGetContents, IOMode(ReadMode) )
@@ -126,3 +126,9 @@ floodFillHelper content x y startRgb replacement xBorder yBorder
               contentWest = floodFillHelper contentEast (x-1) y startRgb replacement xBorder yBorder
               contentSouth = floodFillHelper contentWest x (y+1) startRgb replacement xBorder yBorder
               contentNorth = floodFillHelper contentSouth x (y-1) startRgb replacement xBorder yBorder
+
+floodFill :: Rgb -> Int -> Int -> Image -> Image
+floodFill color x y (Image w h content) 
+    | not (inBounds x y (h-1) (w-1))  = error "Invalid cordinates x and y"
+    | content == [[]] = error  "Unable to floodFill empty Image content"
+    | otherwise = Image w h (floodFillHelper content x y (getPixelAt content x y) color (h-1) (w-1))
