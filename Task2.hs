@@ -147,3 +147,93 @@ floodFill color x y (Image w h content)
     | not (inBounds x y (h-1) (w-1))  = error "Invalid cordinates x and y"
     | content == [[]] = error  "Unable to floodFill empty Image content"
     | otherwise = Image w h (floodFillHelper content x y (getPixelAt content x y) color (h-1) (w-1))
+
+getAt :: [[a]] -> Int -> Int -> a
+getAt grid n m = grid !! n !! m
+
+getGx :: [[Float]] -> Float 
+getGx grid = (getAt grid 0 0) * (-1) + (getAt grid 0 1) * 0 + (getAt grid 0 2) * 1 
+                + (getAt grid 1 0) * (-2) + (getAt grid 1 1) * 0 + (getAt grid 1 2) * 2
+                + (getAt grid 2 0) * (-1) + (getAt grid 2 1) * 0 + (getAt grid 2 2) * 1
+
+getGy :: [[Float]] -> Float 
+getGy grid = (getAt grid 0 0) * (-1) + (getAt grid 0 1) * (-2) + (getAt grid 0 2) * (-1)
+                + (getAt grid 1 0) * 0 + (getAt grid 1 1) * 0 + (getAt grid 1 2) * 0
+                + (getAt grid 2 0) * 1 + (getAt grid 2 1) * 2 + (getAt grid 2 2) * 1
+
+norm :: Float -> Float -> Float 
+norm x y = sqrt (x*x + y*y)
+
+isDownLeftDiagonal :: Int -> Int -> Int -> Int -> Bool
+isDownLeftDiagonal x y xBorder yBorder = x == xBorder && y == 0
+
+isDownRightDiagonal :: Int -> Int -> Int -> Int -> Bool
+isDownRightDiagonal x y xBorder yBorder = x == xBorder && y == yBorder
+
+isTopRightDiagonal :: Int -> Int -> Int -> Int -> Bool
+isTopRightDiagonal x y xBorder yBorder = x == 0 && y == yBorder
+
+isTopLeftDiagonal :: Int -> Int -> Int -> Int -> Bool
+isTopLeftDiagonal x y xBorder yBorder = x == 0 && y == 0
+
+getVector1 :: Int -> Int -> Image -> [Float] 
+getVector1 x y (Image w h grid)
+    | isTopLeftDiagonal x y xBorder yBorder = [word8ToFloat $ red $ getPixelAt grid (x+1) (y+1),word8ToFloat $ red $ getPixelAt grid (x+1) y, word8ToFloat $ red $ getPixelAt grid (x+1) (y+1)]
+    | isTopRightDiagonal x y xBorder yBorder = [word8ToFloat $ red $ getPixelAt grid (x+1) (y-1),word8ToFloat $ red $ getPixelAt grid (x+1) y, word8ToFloat $ red $ getPixelAt grid (x+1) (y-1)]
+    | not (inBounds (x-1) y xBorder yBorder) = [word8ToFloat $ red $ getPixelAt grid (x+1) (y+1),word8ToFloat $ red $ getPixelAt grid (x+1) y, word8ToFloat $ red $ getPixelAt grid (x+1) (y-1)]
+    | otherwise = [word8ToFloat $ red $ getPixelAt grid (x-1) (y-1),word8ToFloat $ red $ getPixelAt grid (x-1) y, word8ToFloat $ red $ getPixelAt grid (x-1) (y+1)]
+    where xBorder = h-1
+          yBorder = y-1
+
+getVector2 :: Int -> Int -> Image -> [Float]
+getVector2 x y (Image w h grid) 
+    | not (inBounds x (y-1) (h-1) (w-1)) = [word8ToFloat $ red $ getPixelAt grid x (y+1),word8ToFloat $ red $ getPixelAt grid x y, word8ToFloat $ red $ getPixelAt grid x (y+1)]
+    | not (inBounds x (y+1) (h-1) (w-1)) = [word8ToFloat $ red $ getPixelAt grid x (y-1),word8ToFloat $ red $ getPixelAt grid x y, word8ToFloat $ red $ getPixelAt grid x (y-1)]
+    | otherwise = [word8ToFloat $ red $ getPixelAt grid x (y-1),word8ToFloat $ red $ getPixelAt grid x y, word8ToFloat $ red $ getPixelAt grid x (y+1)]
+
+getVector3 :: Int -> Int -> Image -> [Float] 
+getVector3 x y (Image w h grid)
+    | isDownLeftDiagonal x y xBorder yBorder = [word8ToFloat $ red $ getPixelAt grid (x-1) (y+1),word8ToFloat $ red $ getPixelAt grid (x-1) y, word8ToFloat $ red $ getPixelAt grid (x-1) (y+1)]
+    | isDownRightDiagonal x y xBorder yBorder = [word8ToFloat $ red $ getPixelAt grid (x-1) (y-1),word8ToFloat $ red $ getPixelAt grid (x-1) y, word8ToFloat $ red $ getPixelAt grid (x-1) (y-1)]
+    | not (inBounds (x+1) y xBorder yBorder) = [word8ToFloat $ red $ getPixelAt grid (x-1) (y+1),word8ToFloat $ red $ getPixelAt grid (x-1) y, word8ToFloat $ red $ getPixelAt grid (x-1) (y-1)]
+    | otherwise = [word8ToFloat $ red $ getPixelAt grid (x+1) (y-1),word8ToFloat $ red $ getPixelAt grid (x+1) y, word8ToFloat $ red $ getPixelAt grid (x+1) (y+1)]
+    where xBorder = h-1
+          yBorder = y-1
+
+getMatrix ::Int -> Int -> Image -> [[Float]]
+getMatrix x y img 
+    | width img == 1 && height img == 1 = [[word8ToFloat $ red $ getPixelAt (content img) 0 0]]
+    | otherwise = [getVector1 x y img,getVector2 x y img, getVector3 x y img]
+
+getCorrectPixel :: [[Float]] -> Rgb
+getCorrectPixel grid = 
+    let notClampedVal = round (norm (getGx grid) (getGy grid))
+        val = if notClampedVal > 255 then 255 else notClampedVal
+    in Rgb val val val
+
+isPixelGrayscale :: Rgb -> Bool 
+isPixelGrayscale pixel = red pixel == green pixel && green pixel == blue pixel
+
+isGrayscale :: [Rgb] -> Bool 
+isGrayscale list
+    | null list = True
+    | otherwise = isPixelGrayscale (head list) && isGrayscale (tail list)
+
+for :: [a] -> (a -> b) -> [b]
+for = flip map
+
+generateContent :: Image -> [[Rgb]]
+generateContent img = concat nested_list
+  where xBorder = height img - 1
+        yBorder = width img - 1
+        nested_list =
+          for [0..xBorder] (\i ->
+            for [0..yBorder] (\j ->
+             [getCorrectPixel (getMatrix i j img)]
+            )
+          )
+
+edgeDetect :: Image -> Image
+edgeDetect img
+    | not $ isGrayscale $ flatten (content img) = error "given image is not greyscale"
+    | otherwise = Image (width img) (height img) (toCorrectContent (generateContent img) (width img))
