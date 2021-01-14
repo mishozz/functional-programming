@@ -1,6 +1,7 @@
-module Task2 (grayscale,floodFill,Rgb(Rgb),Image(Image)) where
+module Task2 (grayscale,floodFill,imgToP3Format,toCorrectContent,transfromToWord8,isCorrectFileFormat,Rgb(Rgb),Image(Image)) where
 
 import Data.Word ( Word8 )
+import Data.Char ( isDigit )
 import System.IO ( openFile, hGetContents, IOMode(ReadMode) )
 
 data Rgb = Rgb { red   :: Word8
@@ -75,11 +76,25 @@ transformToContent  = map p3ToRgb
 
 toCorrectContent :: [[Rgb]] -> Int -> [[Rgb]]
 toCorrectContent content w 
+    | w == 0 = [[]]
     | null content = []
     | otherwise = [flatten $ take w content] ++ toCorrectContent (drop w content) w 
 
-isCorrectFormat :: [String] -> Bool 
-isCorrectFormat list = head list == p3
+isNumber :: String -> Bool
+isNumber ""  = False
+isNumber "." = False
+isNumber xs  =
+  case dropWhile isDigit xs of
+    ""       -> True
+    ('.':ys) -> all isDigit ys
+    _        -> False
+
+isCorrectFileFormat :: [String] -> Bool 
+isCorrectFileFormat list = length list >= 4
+                            && head list == p3 
+                            && isNumber (list!!1)
+                            && isNumber (list!!2)
+                            && length (drop 4 list) ==  (read $ list!!1) * (read $ list!!2) * 3 -- w*h*3 because Rgb has 3 colors
 
 listToPixels :: [String] -> Int -> [[Rgb]]
 listToPixels list n = toCorrectContent  (transformToContent  (toWorkingList list)) n
@@ -89,14 +104,14 @@ loadImage path = do
     handle <- openFile path ReadMode 
     contents <- hGetContents handle
     let singleWords = words contents
-    let width = singleWords!!1
-    let w = read width
-    let height = singleWords!!2
-    let content = drop 4 singleWords
-    if not $ isCorrectFormat singleWords
+    if not $ isCorrectFileFormat singleWords
         then return (Image 0 0 [[]])
         else do
-            return (Image (read width) (read height) (listToPixels content w))
+                let width = singleWords!!1
+                let w = read width
+                let height = singleWords!!2
+                let content = drop 4 singleWords
+                return (Image (read width) (read height) (listToPixels content w))
 
 inBounds :: Int -> Int -> Int -> Int -> Bool
 inBounds x y xBorder yBorder = x >= 0 && x <= xBorder && y >= 0 && y <= yBorder
