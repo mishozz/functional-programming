@@ -1,4 +1,4 @@
-import Task2 (grayscale,imgToP3Format,floodFill,toCorrectContent,transfromToWord8,Rgb(Rgb),Image(Image))
+import Task2 (grayscale,imgToP3Format,floodFill,toCorrectContent,transfromToWord8,isCorrectFileFormat,Rgb(Rgb),Image(Image))
 import Test.HUnit
 
 inputImage1x1 :: Image
@@ -132,12 +132,27 @@ testTransfromToWord8 = TestCase $ do
     assertEqual "transfromToWord8 should return 227" 227 (transfromToWord8 (Rgb 255 255 0))
     assertEqual "transfromToWord8 should return 227" 76 (transfromToWord8 (Rgb 255 0 0))
 
+testIsCorrectFileFormatReturnsTrue :: Test
+testIsCorrectFileFormatReturnsTrue = TestCase $ do
+    assertEqual "isCorrectFileFormat: Test1 should return true" True (isCorrectFileFormat ["P3","3","1","255","0","0","0","0","0","0","0","0","0"])
+    assertEqual "isCorrectFileFormat: Test2 should return true" True (isCorrectFileFormat ["P3","3","2","255","255","0","0","255","0","0","128","0","0","0","7","0","0","128","0","99","0","0"])
+
+
+testIsCorrectFileFormatReturnsFalse :: Test
+testIsCorrectFileFormatReturnsFalse = TestCase $ do
+    assertEqual "isCorrectFileFormat: (Not enough data) should return false" False  (isCorrectFileFormat ["P3","3"])
+    assertEqual "isCorrectFileFormat: (P6 Not P3) Test2 should return false" False  (isCorrectFileFormat ["P6","3","2","255","255","0","0","255","0","0","128","0","0","0","7","0","0","128","0","99","0","0"])
+    assertEqual "isCorrectFileFormat: (Empty file) should return false" False  (isCorrectFileFormat [])
+    assertEqual "isCorrectFileFormat: (Invalid width) should return false" False  (isCorrectFileFormat ["P3","invalid width","3","255","255","0","0"])
+    assertEqual "isCorrectFileFormat: (Invalid height) should return false" False  (isCorrectFileFormat ["P3","1","invalid height","255","255","0","0"])
+    assertEqual "isCorrectFileFormat: (No pixels provided) should return false" False  (isCorrectFileFormat ["P3","3","1","255"])
+
 
 
 tl :: Test
 tl =  TestList [testGrayscaleSuccessful, testFloodFillReturnsNewImage
     ,testFloodFillReturnSameImage,testImgToP3Format,testCorrectContent,
-    testTransfromToWord8]
+    testTransfromToWord8,testIsCorrectFileFormatReturnsTrue, testIsCorrectFileFormatReturnsFalse]
 
 
 main = runTestTT tl
